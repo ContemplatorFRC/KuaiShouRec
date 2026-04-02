@@ -1,0 +1,40 @@
+# DIEN-DCN训练配置文件
+# 用于服务器端训练 (A6000 48G)
+
+# 数据配置
+data:
+  processed_data: "../data/processed_data.parquet"
+  caption_embeddings: "../data/caption_embeddings.npy"
+  output_dir: "../outputs"
+
+# Caption embedding配置
+caption_embedding:
+  output_dim: 256  # embedding维度
+  batch_size: 256
+  max_length: 128
+
+# 模型配置
+model:
+  video_embedding_dim: 256
+  dien_hidden_dim: 256  # 增大
+  dcn_cross_layers: 5   # 增加层数
+  dcn_deep_dims: [1024, 512, 256, 128]  # 增大
+  mlp_dims: [1024, 512, 256, 128]  # 增大
+
+# 训练配置
+training:
+  batch_size: 4096  # 增大batch_size充分利用GPU
+  epochs: 20
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  aux_loss_weight: 0.1
+  max_seq_len: 100
+  min_video_freq: 5
+
+# 优化配置
+use_amp: false  # 启用混合精度训练
+num_workers: 8  # 增加数据加载线程
+
+# 设备配置
+device: "cuda"
+save_every: 1  # 每隔多少epoch保存模型

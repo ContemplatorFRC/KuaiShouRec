@@ -1,0 +1,28 @@
+# 快手短视频推荐项目依赖
+# Python 3.11
+# CUDA 12.2
+
+# ============================================================
+# PyTorch GPU版本安装 (CUDA 12.2 使用 cu121 版本)
+#
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#
+# 先运行上述命令安装PyTorch GPU版本，然后再安装以下依赖
+# ============================================================
+
+# 数据处理
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=12.0.0  # parquet文件读写
+
+# DeBERTa V3
+transformers>=4.30.0
+
+# 评估指标
+scikit-learn>=1.3.0
+
+# 配置文件
+pyyaml>=6.0
+
+# 进度条
+tqdm>=4.65.0
