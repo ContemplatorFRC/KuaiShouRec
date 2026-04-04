@@ -550,11 +550,11 @@ class Trainer:
             'metrics': metrics
         }, path)
 
-        # 保存后清理旧的检查点文件（只保留最近2个）
+        # 保存后清理旧的检查点文件（只保留最近1个）
         if not is_best:
-            self._cleanup_old_checkpoints(keep=2)
+            self._cleanup_old_checkpoints(keep=1)
 
-    def _cleanup_old_checkpoints(self, keep: int = 2):
+    def _cleanup_old_checkpoints(self, keep: int = 1):
         """清理旧的检查点文件，只保留最近的几个"""
         # 获取所有 model_epoch_*.pt 文件并按修改时间排序
         checkpoints = sorted(
