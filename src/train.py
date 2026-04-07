@@ -28,8 +28,6 @@ from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
 
-# CUDA优化设置
-# cuDNN与CUDA 12.4有兼容性问题，暂时禁用
 use_cudnn = True
 if use_cudnn:
     torch.backends.cudnn.enabled = True
@@ -84,6 +82,14 @@ class TrainConfig:
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
     AUX_LOSS_WEIGHT = 0.1
+
+    # Early Stopping参数
+    EARLY_STOP_PATIENCE = 5  # 连续多少个epoch没有提升就停止
+    EARLY_STOP_MIN_DELTA = 0.001  # AUC提升的最小阈值
+
+    # 学习率调度参数
+    LR_PATIENCE = 3  # 学习率调整的patience
+    LR_FACTOR = 0.5  # 学习率衰减因子
 
     # 优化参数
     USE_AMP = False  # 混合精度训练
@@ -366,7 +372,7 @@ class Trainer:
 
         # 学习率调度器
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='max', factor=0.5, patience=2
+            self.optimizer, mode='max', factor=config.LR_FACTOR, patience=config.LR_PATIENCE
         )
 
         # 混合精度训练的GradScaler
@@ -375,6 +381,11 @@ class Trainer:
         # 记录最佳模型
         self.best_auc = 0.0
         self.best_epoch = 0
+
+        # Early Stopping计数器
+        self.early_stop_counter = 0
+        self.early_stop_patience = config.EARLY_STOP_PATIENCE
+        self.early_stop_min_delta = config.EARLY_STOP_MIN_DELTA
 
         # 输出目录
         self.output_dir = Path(config.OUTPUT_DIR)
@@ -499,11 +510,20 @@ class Trainer:
             history.append(epoch_record)
 
             # 保存最佳模型
-            if val_metrics['auc'] > self.best_auc:
+            if val_metrics['auc'] > self.best_auc + self.early_stop_min_delta:
                 self.best_auc = val_metrics['auc']
                 self.best_epoch = epoch
                 self._save_model(epoch, val_metrics, is_best=True)
                 print(f"保存最佳模型 (AUC: {val_metrics['auc']:.4f})")
+                # 重置early stopping计数器
+                self.early_stop_counter = 0
+            else:
+                # AUC没有显著提升，增加计数器
+                self.early_stop_counter += 1
+                print(f"Early Stopping计数: {self.early_stop_counter}/{self.early_stop_patience}")
+                if self.early_stop_counter >= self.early_stop_patience:
+                    print(f"\nEarly Stopping触发! 最佳AUC: {self.best_auc:.4f} (Epoch {self.best_epoch})")
+                    break
 
             # 定期保存
             if epoch % self.config.SAVE_EVERY == 0:
@@ -614,6 +634,10 @@ def main():
             'learning_rate': 'LEARNING_RATE',
             'batch_size': 'BATCH_SIZE',
             'lr': 'LEARNING_RATE',
+            'early_stop_patience': 'EARLY_STOP_PATIENCE',
+            'early_stop_min_delta': 'EARLY_STOP_MIN_DELTA',
+            'lr_patience': 'LR_PATIENCE',
+            'lr_factor': 'LR_FACTOR',
         }
 
         # 处理嵌套配置
@@ -654,6 +678,8 @@ def main():
     print(f"Batch Size: {config.BATCH_SIZE}")
     print(f"Epochs: {config.NUM_EPOCHS}")
     print(f"Learning Rate: {config.LEARNING_RATE}")
+    print(f"Early Stop Patience: {config.EARLY_STOP_PATIENCE}")
+    print(f"LR Patience: {config.LR_PATIENCE}")
     print(f"GPU: {args.gpu}")
     print(f"混合精度训练: {use_amp}")
 

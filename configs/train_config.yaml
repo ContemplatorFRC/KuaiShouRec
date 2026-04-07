@@ -16,10 +16,10 @@ caption_embedding:
 # 模型配置
 model:
   video_embedding_dim: 256
-  dien_hidden_dim: 256  # 增大
-  dcn_cross_layers: 5   # 增加层数
-  dcn_deep_dims: [1024, 512, 256, 128]  # 增大
-  mlp_dims: [1024, 512, 256, 128]  # 增大
+  dien_hidden_dim: 512  # 增大，增强兴趣表达能力
+  dcn_cross_layers: 4   # 减少层数，缓解过拟合
+  dcn_deep_dims: [1024, 512, 256, 128]
+  mlp_dims: [1024, 512, 256, 128]
 
 # 训练配置
 training:
@@ -30,6 +30,12 @@ training:
   aux_loss_weight: 0.1
   max_seq_len: 100
   min_video_freq: 5
+  # Early Stopping参数
+  early_stop_patience: 5  # 连续5个epoch无提升则停止
+  early_stop_min_delta: 0.001  # AUC提升最小阈值
+  # 学习率调度参数
+  lr_patience: 3  # 3个epoch无提升则降低学习率
+  lr_factor: 0.5  # 学习率衰减因子
 
 # 优化配置
 use_amp: false  # 启用混合精度训练
